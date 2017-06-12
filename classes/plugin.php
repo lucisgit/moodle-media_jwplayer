@@ -481,7 +481,9 @@ class media_jwplayer_plugin extends core_media_player {
     public function setup($page) {
         global $CFG;
 
-        $hostingmethod = get_config('media_jwplayer', 'hostingmethod');
+        if (!$hostingmethod = get_config('media_jwplayer', 'hostingmethod')) {
+            $hostingmethod = 'cloud';
+        }
         if ($hostingmethod === 'cloud') {
             // Well, this is not really a "cloud" version any more, we are just
             // using jwplayer libraries hosted on JW Player CDN.
