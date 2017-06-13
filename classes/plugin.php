@@ -503,4 +503,17 @@ class media_jwplayer_plugin extends core_media_player {
         $licensejs = 'require.config({ config: {\'media_jwplayer/jwplayer\': { licensekey: \'' . $licensekey . '\'}}})';
         $page->requires->js_amd_inline($licensejs);
     }
+
+    /**
+     * Returns human-readable string of supported file/link types for the "Manage media players" page
+     * @param array $usedextensions extensions that should NOT be highlighted
+     * @return string
+     */
+    public function supports($usedextensions = []) {
+        $supports = parent::supports($usedextensions);
+        if (get_config('media_jwplayer', 'supportrtmp')) {
+            $supports .= ($supports ? '<br>' : '') . get_string('supportrtmp', 'media_jwplayer');
+        }
+        return $supports;
+    }
 }
