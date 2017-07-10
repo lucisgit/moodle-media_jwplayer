@@ -58,7 +58,7 @@ class media_jwplayer_hostingmethod_setting extends admin_setting_configselect {
     public function validate($data) {
         global $CFG;
         if ($data === 'self') {
-            $hostedjwplayerpath = $CFG->libdir . '/jwplayer/jwplayer.js';
+            $hostedjwplayerpath = $CFG->dirroot . '/media/player/jwplayer/jwplayer/jwplayer.js';
             if (!is_readable($hostedjwplayerpath)) {
                 return get_string('errornojwplayerinstalled', 'media_jwplayer');
             }

@@ -464,7 +464,7 @@ class media_jwplayer_plugin extends core_media_player {
             // Cloud mode, but no license key.
             return false;
         }
-        $hostedjwplayerpath = $CFG->libdir . '/jwplayer/jwplayer.js';
+        $hostedjwplayerpath = $CFG->dirroot . '/media/player/jwplayer/jwplayer/jwplayer.js';
         if (($hostingmethod === 'self') && (!is_readable($hostedjwplayerpath) || empty($licensekey))) {
             // Self-hosted mode, but no jwplayer files and/or no license.
             return false;
@@ -490,8 +490,8 @@ class media_jwplayer_plugin extends core_media_player {
             $jwplayer = new moodle_url('https://ssl.p.jwpcdn.com/player/v/' . MEDIA_JWPLAYER_CLOUD_VERSION . '/jwplayer');
         } else if ($hostingmethod === 'self') {
             // For self-hosted option, we are looking for player files presence in
-            // ./lib/jwplayer/ directory.
-            $jwplayer = new moodle_url($CFG->httpswwwroot.'/lib/jwplayer/jwplayer');
+            // /media/player/jwplayer/jwplayer/ directory.
+            $jwplayer = new moodle_url($CFG->httpswwwroot.'/media/player/jwplayer/jwplayer/jwplayer');
         }
         // We need to define jwplayer, since jwplayer doesn't
         // define a module for require.js.
