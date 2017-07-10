@@ -133,7 +133,7 @@ _aspectratio, autostart, controls, height, mute, primary, repeat, width,
 androidhls, hlslabels, description, mediaid_
 
 For full description of each option, please refer to [configuration
-reference](http://support.jwplayer.com/customer/portal/articles/1413113-configuration-options-reference)
+reference](https://developer.jwplayer.com/jw-player/docs/developer-guide/customization/configuration-reference/)
 on JW Player website. Options _file_ and _image_ are not relevant, thus
 can't be applied.
 
@@ -152,7 +152,7 @@ While in self-hosted mode, choosing a different release is a matter of
 downloading desired JW7 release and replacing files in ./media/player/jwplayer/jwplayer,
 cloud-hosted version is using a constant to determine the version to use in
 JW Player CDN. Plugin is using the most recent stable version of JW Player
-[available](http://support.jwplayer.com/customer/portal/articles/1403726-jw-player-7-release-notes)
+[available](https://developer.jwplayer.com/jw-player/docs/developer-guide/release_notes/release_notes_7/)
 at release time, however if different version is required, it can be
 specified using `MEDIA_JWPLAYER_CLOUD_VERSION` constant defined in Moodle
 `config.php`, e.g. `define('MEDIA_JWPLAYER_CLOUD_VERSION', '7.12.1');` will
