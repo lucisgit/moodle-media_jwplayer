@@ -31,12 +31,6 @@ if (!defined('MEDIA_JWPLAYER_CLOUD_VERSION')) {
     define('MEDIA_JWPLAYER_CLOUD_VERSION', '7.12.0');
 }
 
-// Size and aspect ratio related defaults.
-if (!defined('MEDIA_JWPLAYER_VIDEO_WIDTH')) {
-    // Default video width if no width is specified.
-    // May be defined in config.php if required.
-    define('MEDIA_JWPLAYER_VIDEO_WIDTH', 400);
-}
 if (!defined('MEDIA_JWPLAYER_VIDEO_WIDTH_RESPONSIVE')) {
     // Default video width if no width is specified.
     // May be defined in config.php if required.

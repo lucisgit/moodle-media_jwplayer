@@ -218,7 +218,7 @@ class media_jwplayer_plugin extends core_media_player {
                 if (get_config('media_jwplayer', 'displaystyle') === 'responsive') {
                     $width = MEDIA_JWPLAYER_VIDEO_WIDTH_RESPONSIVE;
                 } else {
-                    $width = MEDIA_JWPLAYER_VIDEO_WIDTH;
+                    $width = $CFG->media_default_width;
                 }
             }
 
