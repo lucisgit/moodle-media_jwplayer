@@ -28,7 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 if (!defined('MEDIA_JWPLAYER_CLOUD_VERSION')) {
     // This is the only place where version needs to be changed in case of new
     // release avialability.
-    define('MEDIA_JWPLAYER_CLOUD_VERSION', '7.10.1');
+    define('MEDIA_JWPLAYER_CLOUD_VERSION', '7.12.0');
 }
 
 // Size and aspect ratio related defaults.
