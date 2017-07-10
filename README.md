@@ -72,6 +72,24 @@ pre-configuring player and using it anywhere else. In our case, cloud is
 similar to self-hosted, the difference is that libaries are hosted using
 JW Player CDN rather than located locally in Moodle.</sub>
 
+Upgrading from filter_jwplayer
+------------------------------
+
+Notice, that this plugin replaces [moodle-filter_jwplayer](https://github.com/lucisgit/moodle-filter_jwplayer), which you may use in Moodle 3.2. It is advided to remove (or at least disable) JW Player filter plugin when installing this plugin.
+
+While the player plugin configuration settings are the same as in
+moodle-filter_jwplayer plugin, there is no automatic settings import, so
+you need to configure player plugin after installation.
+
+There are some important differences:
+
+* Self-hosted player files are no longer located at `./lib/jwplayer`, player plugin will look for them in `./media/player/jwplayer/jwplayer` directory.
+
+* If you were overriding any php constants for default configuration, they changed from `FILTER_JWPLAYER_*` to `MEDIA_JWPLAYER_*`.
+
+* `FILTER_JWPLAYER_VIDEO_WIDTH` constant has been deprecated, use  Site Administration -> Plugins -> Media players -> Manage media players page (or $CFG->media_default_width in your config file) to set default player width.
+
+
 Usage
 -----
 
