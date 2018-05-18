@@ -92,6 +92,14 @@ class media_jwplayer_plugin extends core_media_player {
         if (count($sources) > 0) {
             $playerid = 'media_jwplayer_media_' . html_writer::random_id();
 
+            // Create attribute options if we don't already have them.
+            if (empty($options['htmlattributes']) && !empty($options[core_media_manager::OPTION_ORIGINAL_TEXT])) {
+              $xml = new SimpleXMLElement($options[core_media_manager::OPTION_ORIGINAL_TEXT]);
+              foreach ($xml->attributes() as $attrib => $atval) {
+                $options['htmlattributes'][$attrib] = $atval;
+              }
+            }
+
             // Process data-jwplayer attributes.
             if (!empty($options['htmlattributes'])) {
                 foreach ($options['htmlattributes'] as $attrib => $atval) {
