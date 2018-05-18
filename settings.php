@@ -109,6 +109,12 @@ if ($ADMIN->fulltree) {
             get_string('customskincssdesc', 'media_jwplayer'),
             ''));
 
+    // Allow empty title.
+    $settings->add(new admin_setting_configcheckbox('media_jwplayer/emptytitle',
+            get_string('emptytitle', 'media_jwplayer'),
+            get_string('emptytitledesc', 'media_jwplayer'),
+            0));
+
     // Google Analytics settings.
     $settings->add(new admin_setting_heading('googleanalyticsconfig',
             get_string('googleanalyticsconfig', 'media_jwplayer'),
