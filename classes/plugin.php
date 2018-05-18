@@ -167,7 +167,7 @@ class media_jwplayer_plugin extends core_media_player {
             // Set Title from title attribute of a tag if it has one if not default to filename.
             if (isset($options['htmlattributes']['title'])) {
                 $playlistitem['title'] = (string) $options['htmlattributes']['title'];
-            } else {
+            } else if (!get_config('media_jwplayer', 'emptytitle')) {
                 $playlistitem['title'] = $this->get_name('', $urls);
             }
 
