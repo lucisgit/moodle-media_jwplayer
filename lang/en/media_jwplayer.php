@@ -69,6 +69,7 @@ $string['licensekeydesc'] = 'Player license key from <a href="https://dashboard.
 $string['paideditionsconfig'] = 'Settings for paid editions of JW Player';
 $string['paideditionsconfigdescr'] = 'Settings below only work with Pro, Premium and Ads editions. They have no effect for free edition.';
 $string['pluginname'] = 'JW Player';
+$string['privacy:metadata'] = 'JWPlayer plugin does not store any personal data.';
 $string['standardskin'] = 'standard';
 $string['supportrtmp'] = 'RTMP streams';
 $string['supportrtmpdesc'] = 'If enabled, links that start with rtmp:// will be handled by the plugin, irrespective of whether its extension is enabled in the supported extensions setting.';

@@ -15,17 +15,32 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- *  JW Player media plugin.
+ * Privacy Subsystem implementation for media_jwplayer.
  *
  * @package    media_jwplayer
- * @copyright  2017 Ruslan Kabalin, Lancaster University
+ * @copyright  2018 Ruslan Kabalin, Lancaster University
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+namespace media_jwplayer\privacy;
+
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2018072600;        // The current plugin version (Date: YYYYMMDDXX).
-$plugin->requires  = 2018051700;        // Requires Moodle 3.5
-$plugin->component = 'media_jwplayer'; // Full name of the plugin (used for diagnostics).
-$plugin->maturity = MATURITY_STABLE;
-$plugin->release   = '7-0.2 for Moodle 3.2+, JW7 CDN 7.12.13)';
+/**
+ * Privacy Subsystem for media_jwplayer implementing null_provider.
+ *
+ * @copyright  2018 Ruslan Kabalin, Lancaster University
+ * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+class provider implements \core_privacy\local\metadata\null_provider {
+
+    /**
+     * Get the language string identifier with the component's language
+     * file to explain why this plugin stores no data.
+     *
+     * @return  string
+     */
+    public static function get_reason() : string {
+        return 'privacy:metadata';
+    }
+}
