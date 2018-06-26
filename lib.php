@@ -28,7 +28,7 @@ defined('MOODLE_INTERNAL') || die();
 if (!defined('MEDIA_JWPLAYER_CLOUD_VERSION')) {
     // This is the only place where version needs to be changed in case of new
     // release avialability.
-    define('MEDIA_JWPLAYER_CLOUD_VERSION', '7.12.0');
+    define('MEDIA_JWPLAYER_CLOUD_VERSION', '7.12.13');
 }
 
 if (!defined('MEDIA_JWPLAYER_VIDEO_WIDTH_RESPONSIVE')) {
