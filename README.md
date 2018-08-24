@@ -130,7 +130,7 @@ HTML attributes in the player link that start with _data-jwplayer-_ prefix,
 will be used as player configuration options. The possible options are:
 
 _aspectratio, autostart, controls, height, mute, primary, repeat, width,
-androidhls, hlslabels, description, mediaid_
+androidhls, hlslabels, description, mediaid, subtitles_
 
 For full description of each option, please refer to [configuration
 reference](https://developer.jwplayer.com/jw-player/docs/developer-guide/customization/configuration-reference/)
@@ -140,6 +140,14 @@ can't be applied.
 For example, `<a data-jwplayer-autostart="true"
 href="https://some.stream.org/functional.webm">functional.webm</a>` will
 make player start playing video automatically on page load.
+
+#### Subtitles
+
+You can use _data-jwplayer-subtitles_ attribute to add subtitles: `<a
+href="https://some.stream.org/functional.mp4"
+data-jwplayer-subtitles="English:
+http://someurl.org/tracks/functional.txt"
+data-jwplayer-description="some description">test subtitles</a>`
 
 ### Default player dimentions
 
