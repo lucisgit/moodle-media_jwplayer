@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2018072600;        // The current plugin version (Date: YYYYMMDDXX).
+$plugin->version   = 2018082400;        // The current plugin version (Date: YYYYMMDDXX).
 $plugin->requires  = 2018051700;        // Requires Moodle 3.5
 $plugin->component = 'media_jwplayer'; // Full name of the plugin (used for diagnostics).
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release   = '7-0.2 for Moodle 3.2+, JW7 CDN 7.12.13)';
+$plugin->release   = '7-0.3 for Moodle 3.5+, JW7 CDN 7.12.13)';
