@@ -171,7 +171,7 @@ class media_jwplayer_plugin extends core_media_player {
             if (isset($options['htmlattributes']['title'])) {
                 $playlistitem['title'] = (string) $options['htmlattributes']['title'];
             } else if (!get_config('media_jwplayer', 'emptytitle')) {
-                $playlistitem['title'] = $this->get_name('', $urls);
+                $playlistitem['title'] = $this->get_name($name, $urls);
             }
 
             // Setup video description.
