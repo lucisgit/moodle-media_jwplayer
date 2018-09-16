@@ -34,6 +34,8 @@ require_once(__DIR__ . '/../lib.php');
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class media_jwplayer_plugin extends core_media_player {
+    /** @var bool is this called from mobile app. */
+    protected $ismobileapp = false;
 
     /**
      * Generates code required to embed the player.
@@ -490,6 +492,13 @@ class media_jwplayer_plugin extends core_media_player {
     public function setup($page) {
         global $CFG;
 
+        if ($this->is_mobile_app_ws_request()) {
+            // Nothing to setup here, it is webservice call. Set the flag to fallback
+            // using <video> tag later.
+            $this->ismobileapp = true;
+            return;
+        }
+
         if (!$hostingmethod = get_config('media_jwplayer', 'hostingmethod')) {
             $hostingmethod = 'cloud';
         }
@@ -524,5 +533,31 @@ class media_jwplayer_plugin extends core_media_player {
             $supports .= ($supports ? '<br>' : '') . get_string('supportrtmp', 'media_jwplayer');
         }
         return $supports;
+    }
+
+
+    /**
+     * Check if embedding is requested by webservice call from mobile app.
+     *
+     * We need to do more detailed check here, as WS_SERVER is not sufficient.
+     * Code snippet by courtesy of Open University.
+     *
+     * @return bool
+     */
+    public function is_mobile_app_ws_request(){
+        global $DB;
+        $ismobileapp = false;
+        $wstoken = optional_param('wstoken', null, PARAM_ALPHANUM);
+        if ($wstoken) {
+            list($insql, $params) = $DB->get_in_or_equal(
+                    [MOODLE_OFFICIAL_MOBILE_SERVICE, 'local_mobile'], SQL_PARAMS_NAMED);
+            $params['token'] = $wstoken;
+            $sql = "SELECT *
+                      FROM {external_tokens} t
+                      JOIN {external_services} s ON t.externalserviceid = s.id
+                     WHERE t.token = :token AND s.shortname $insql";
+            $ismobileapp = $DB->record_exists_sql($sql, $params);
+        }
+        return $ismobileapp;
     }
 }
