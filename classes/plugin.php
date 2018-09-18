@@ -345,7 +345,7 @@ class media_jwplayer_plugin extends core_media_player {
 
             // Set up the player.
             $PAGE->requires->js_call_amd('media_jwplayer/jwplayer', 'setupPlayer', array($playersetup));
-            $playerdiv = html_writer::tag('span', $this->get_name('', $urls), array('id' => $playerid));
+            $playerdiv = html_writer::tag('span', self::LINKPLACEHOLDER, array('id' => $playerid));
             $outerspan = html_writer::tag('span', $playerdiv, $outerspanargs);
             $output .= html_writer::tag('span', $outerspan, $newattributes);
         }
