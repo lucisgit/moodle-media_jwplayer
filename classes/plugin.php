@@ -45,6 +45,67 @@ class media_jwplayer_plugin extends core_media_player {
      * @param int $width Optional width; 0 to use default
      * @param int $height Optional height; 0 to use default
      * @param array $options Options array
+     * @return string HTML code for embed
+     */
+    public function embed($urls, $name, $width, $height, $options) {
+        global $CFG;
+
+        // Create attribute options if we don't already have them.
+        if (empty($options['htmlattributes']) && !empty($options[core_media_manager::OPTION_ORIGINAL_TEXT])
+                && !preg_match('/<(video|audio)/', $options[core_media_manager::OPTION_ORIGINAL_TEXT])) {
+            $xml = new SimpleXMLElement($options[core_media_manager::OPTION_ORIGINAL_TEXT]);
+            foreach ($xml->attributes() as $attrib => $atval) {
+                $options['htmlattributes'][$attrib] = $atval;
+            }
+        }
+
+        if ($this->ismobileapp) {
+            // We can't use JWPlayer in Moodle mobile app as we are not able to
+            // make JS modules initialised. Check if we can fallback to html5 video/audio.
+            require_once($CFG->libdir . '/filelib.php');
+            $supportedextensions = file_get_typegroup('extension', ['html_video', 'html_audio']);
+            $sources = array();
+            foreach ($urls as $url) {
+                if ($url->get_scheme() === 'rtmp') {
+                    // RTMP needs flash, skipping.
+                    continue;
+                }
+
+                // Get extension and mimetype.
+                $ext = core_media_manager::instance()->get_extension($url);
+                $mimetype = core_media_manager::instance()->get_mimetype($url);
+
+                if ($ext === 'm3u8') {
+                    // HLS. Only reason we do mimetype overriding here is because setting
+                    // $CFG->customfiletypes temporarly won't change file_get_typegroup()
+                    // output presumably because of caching.
+                    $mimetype = 'application/x-mpegURL';
+                } else if (!in_array('.'.$ext, $supportedextensions)){
+                    // Extension is not supported for use in html5 video/audio.
+                    continue;
+                }
+                $source = html_writer::empty_tag('source', array('src' => $url, 'type' => $mimetype));
+                $sources[] = $source;
+            }
+            if (count($sources) > 0) {
+                // TODO: Output player here.
+            }
+            // We can't fallback to html5 video/audio, just output link instead.
+            return self::LINKPLACEHOLDER;
+        }
+
+        // Embeding JWPlayer.
+        return $this->embed_jwplayer($urls, $name, $width, $height, $options);
+    }
+
+    /**
+     * Generates code required to embed JWPlayer.
+     *
+     * @param array $urls Moodle URLs of media files
+     * @param string $name Display name; '' to use default
+     * @param int $width Optional width; 0 to use default
+     * @param int $height Optional height; 0 to use default
+     * @param array $options Options array
      *                       image
      *                           use 'image' key with a moodle_url to an image as poster image
      *                           displayed before playback starts.
@@ -54,7 +115,7 @@ class media_jwplayer_plugin extends core_media_player {
      *                           Example: $options['subtitles']['English'] = http://example.com/english.vtt
      * @return string HTML code for embed
      */
-    public function embed($urls, $name, $width, $height, $options) {
+    private function embed_jwplayer($urls, $name, $width, $height, $options) {
         global $PAGE, $CFG;
         $mediamanager = core_media_manager::instance();
         $output = '';
@@ -93,15 +154,6 @@ class media_jwplayer_plugin extends core_media_player {
 
         if (count($sources) > 0) {
             $playerid = 'media_jwplayer_media_' . html_writer::random_id();
-
-            // Create attribute options if we don't already have them.
-            if (empty($options['htmlattributes']) && !empty($options[core_media_manager::OPTION_ORIGINAL_TEXT])
-                    && !preg_match('/<(video|audio)/', $options[core_media_manager::OPTION_ORIGINAL_TEXT])) {
-              $xml = new SimpleXMLElement($options[core_media_manager::OPTION_ORIGINAL_TEXT]);
-              foreach ($xml->attributes() as $attrib => $atval) {
-                $options['htmlattributes'][$attrib] = $atval;
-              }
-            }
 
             // Process data-jwplayer attributes.
             if (!empty($options['htmlattributes'])) {
