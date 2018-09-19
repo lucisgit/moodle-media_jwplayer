@@ -110,7 +110,7 @@ class media_jwplayer_plugin extends core_media_player {
                 }
 
                 // Output html5 player.
-                $attributes += ['preload' => 'auto', 'controls' => 'true'];
+                $attributes += ['preload' => 'metadata', 'controls' => 'true'];
                 $sources = implode("\n", $sources);
                 return html_writer::tag($isaudio ? 'audio' : 'video', $sources . self::LINKPLACEHOLDER, $attributes);
             }
