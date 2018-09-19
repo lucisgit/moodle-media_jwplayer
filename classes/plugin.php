@@ -65,6 +65,7 @@ class media_jwplayer_plugin extends core_media_player {
             require_once($CFG->libdir . '/filelib.php');
             $supportedextensions = file_get_typegroup('extension', ['html_video', 'html_audio']);
             $sources = array();
+            $isaudio = null;
             foreach ($urls as $url) {
                 if ($url->get_scheme() === 'rtmp') {
                     // RTMP needs flash, skipping.
@@ -80,15 +81,38 @@ class media_jwplayer_plugin extends core_media_player {
                     // $CFG->customfiletypes temporarly won't change file_get_typegroup()
                     // output presumably because of caching.
                     $mimetype = 'application/x-mpegURL';
-                } else if (!in_array('.'.$ext, $supportedextensions)){
+                } else if (!in_array('.' . $ext, $supportedextensions)){
                     // Extension is not supported for use in html5 video/audio.
                     continue;
+                }
+
+                if ($isaudio === null) {
+                    // Flag is we deal with audio.
+                    $isaudio = in_array('.' . $ext, file_get_typegroup('extension', 'audio'));
                 }
                 $source = html_writer::empty_tag('source', array('src' => $url, 'type' => $mimetype));
                 $sources[] = $source;
             }
             if (count($sources) > 0) {
-                // TODO: Output player here.
+                $attributes = array();
+                // Set Title from title attribute of a tag if it has one if not default to filename.
+                if (isset($options['htmlattributes']['title'])) {
+                    $attributes['title'] = (string) $options['htmlattributes']['title'];
+                } else if (!get_config('media_jwplayer', 'emptytitle')) {
+                    $attributes['title'] = $this->get_name($name, $urls);
+                }
+
+                // Set size.
+                if (get_config('media_jwplayer', 'displaystyle') !== 'responsive') {
+                    // Note we ignore limitsize setting if not responsive.
+                    parent::pick_video_size($width, $height);
+                    $attributes += ['width' => $width] + ($height ? ['height' => $height] : []);
+                }
+
+                // Output html5 player.
+                $attributes += ['preload' => 'auto', 'controls' => 'true'];
+                $sources = implode("\n", $sources);
+                return html_writer::tag($isaudio ? 'audio' : 'video', $sources . self::LINKPLACEHOLDER, $attributes);
             }
             // We can't fallback to html5 video/audio, just output link instead.
             return self::LINKPLACEHOLDER;
