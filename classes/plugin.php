@@ -273,197 +273,192 @@ class media_jwplayer_plugin extends core_media_player {
             }
         }
 
-        // Make sure that stream URLs are at the start of the list.
+        // Make sure that stream URLs are at the start of the list and set up playlist.
         $sources = array_merge($streams, $sources);
+        $playlistitem = array('sources' => $sources);
 
-        if (count($sources) > 0) {
-            $playerid = 'media_jwplayer_media_' . html_writer::random_id();
-
-            // Set up playlist.
-            $playlistitem = array('sources' => $sources);
-
-            // Set Title from title attribute of a tag if it has one if not default to filename.
-            if (isset($options['globalattributes']['title'])) {
-                $playlistitem['title'] = (string) $options['globalattributes']['title'];
-            } else if (!get_config('media_jwplayer', 'emptytitle')) {
-                $playlistitem['title'] = $this->get_name($name, $urls);
-            }
-
-            // Setup video description.
-            if (isset($options['description'])) {
-                $playlistitem['description'] = $options['description'];
-            }
-
-            // Setup video mediaid and use this for the playerid.
-            if (isset($options['mediaid']) && strlen(trim($options['mediaid']))) {
-                $playlistitem['mediaid'] = $options['mediaid'];
-                $playerid = 'media_jwplayer_media_' . preg_replace('/\s+/', '', $options['mediaid']);
-            }
-
-            // Setup poster image.
-            if (isset($options['image']) && $options['image'] instanceof moodle_url) {
-                $playlistitem['image'] = urldecode($options['image']->out(false));
-            } else if ($poster = get_config('media_jwplayer', 'defaultposter')) {
-                $syscontext = context_system::instance();
-                $playlistitem['image'] = moodle_url::make_pluginfile_url($syscontext->id, 'media_jwplayer', 'defaultposter', null, null, $poster)->out(true);
-            }
-
-            // Setup subtitle tracks.
-            if (isset($options['subtitles'])) {
-                $tracks = array();
-                foreach ($options['subtitles'] as $label => $subtitlefileurl) {
-                    if ($subtitlefileurl instanceof moodle_url) {
-                        $tracks[] = array(
-                            'file' => urldecode($subtitlefileurl->out(false)),
-                            'label' => $label,
-                        );
-                    }
-                }
-                $playlistitem['tracks'] = $tracks;
-            }
-
-            $playersetupdata['playlist'] = array($playlistitem);
-
-            // If width and/or height are set in the options override those from URL or defaults.
-            if (isset($options['width'])) {
-                $width = $options['width'];
-            }
-            if (isset($options['height'])) {
-                $height = $options['height'];
-            }
-
-            // If we are dealing with audio, show just the control bar.
-            if (mimeinfo('string', $sources[0]['file']) === 'audio') {
-                $width = MEDIA_JWPLAYER_AUDIO_WIDTH;
-                $height = MEDIA_JWPLAYER_AUDIO_HEIGHT;
-            }
-
-            // If width is not provided, use default.
-            if (!$width) {
-                // Use responsive width if choosen in settings otherwise default to fixed width.
-                if (get_config('media_jwplayer', 'displaystyle') === 'responsive') {
-                    $width = MEDIA_JWPLAYER_VIDEO_WIDTH_RESPONSIVE;
-                } else {
-                    $width = $CFG->media_default_width;
-                }
-            }
-
-            if (is_numeric($width)) {
-                $width = round($width);
-            }
-            $playersetupdata['width'] = $width;
-
-            // If width is a percentage surrounding span needs to have its width set so it does not default to 0px.
-            $outerspanargs = array('class' => 'jwplayer_playerblock');
-            if (!is_numeric($width)) {
-                $outerspanargs['style'] = 'width: '.$width.';';
-                $width = '100%';  // As the outer span in now at the required width, we set the width of the player to 100%.
-            }
-
-            // Automatically set the height unless it is specified.
-            if ($height) {
-                if (is_numeric($height)) {
-                    $playersetupdata['height'] = $height;
-                } else if (is_numeric($width)) {
-                    // If width is numeric and height is percentage, calculate height from width.
-                    $playersetupdata['height'] = round($width * floatval($height) / 100);
-                } else {
-                    // If width is also percentage, then set aspect ratio.
-                    $playersetupdata['aspectratio'] = "100:".floatval($height);
-                }
-            } else {
-                if (is_numeric($width)) {
-                    // If width is numeric calculate height from default aspect ratio.
-                    $playersetupdata['height'] = round($width * MEDIA_JWPLAYER_VIDEO_ASPECTRATIO_H / MEDIA_JWPLAYER_VIDEO_ASPECTRATIO_W);
-                } else if (isset($options['aspectratio'])) {
-                    // Responsive videos need aspect ratio set to automatically set height, if this is set in $options use that.
-                    $playersetupdata['aspectratio'] = $options['aspectratio'];
-                } else {
-                    // Use default aspectration.
-                    $playersetupdata['aspectratio'] = MEDIA_JWPLAYER_VIDEO_ASPECTRATIO_W.":".MEDIA_JWPLAYER_VIDEO_ASPECTRATIO_H;
-                }
-            }
-
-            // Set additional player options: autostart, mute, controls, repeat, hlslabels, androidhls, primary.
-            if (isset($options['autostart'])) {
-                $playersetupdata['autostart'] = $options['autostart'];
-            }
-            if (isset($options['mute'])) {
-                $playersetupdata['mute'] = $options['mute'];
-            }
-            if (isset($options['controls'])) {
-                $playersetupdata['controls'] = $options['controls'];
-            }
-            if (isset($options['repeat'])) {
-                $playersetupdata['repeat'] = $options['repeat'];
-            }
-            if (isset($options['hlslabels']) && is_array($options['hlslabels'])) {
-                $playersetupdata['hlslabels'] = $options['hlslabels'];
-            }
-            if (isset($options['androidhls'])) {
-                $playersetupdata['androidhls'] = $options['androidhls'];
-            }
-            if (isset($options['primary'])) {
-                // if primary is set in $options then this will override all defaults including those for streams set above.
-                $playersetupdata['primary'] = $options['primary'];
-            }
-
-            // Load skin.
-            if ($customskincss = get_config('media_jwplayer', 'customskincss')) {
-                $playersetupdata['skin'] = $customskincss;
-            } else if ($skin = get_config('media_jwplayer', 'skin')) {
-                $playersetupdata['skin'] = $skin;
-            }
-
-            // Set Google Analytics settings if enabled.
-            if (get_config('media_jwplayer', 'googleanalytics')) {
-                if (isset($options['gaidstring'])) {
-                    $gaidstring = $options['gaidstring'];
-                } else {
-                    $gaidstring = get_config('media_jwplayer', 'gaidstring');
-                }
-
-                if (isset($options['galabel'])) {
-                    $galabel = $options['galabel'];
-                } else {
-                    $galabel = get_config('media_jwplayer', 'galabel');
-                }
-
-                $playersetupdata['ga'] = array(
-                    'idstring' => $gaidstring,
-                    'label' => $galabel
-                );
-            }
-
-            $playersetup = new stdClass();
-            $playersetup->playerid = $playerid;
-            $playersetup->setupdata = $playersetupdata;
-
-            // Add download button if required and supported.
-            if (get_config('media_jwplayer', 'downloadbutton') && !count($streams)) {
-                $playersetup->downloadbtn = array(
-                    'img' => $CFG->wwwroot.'/media/player/jwplayer/pix/download.png',
-                    'tttext' => get_string('videodownloadbtntttext', 'media_jwplayer'),
-                );
-            }
-
-            // Pass the page context variables for logging
-            $playersetup->logcontext = $PAGE->context->id;
-            $playersetup->logevents = $this->get_supported_events();
-
-            // Set required class for player span tag.
-            if (isset($options['globalattributes']['class'])) {
-                $options['globalattributes']['class'] .= ' jwplayer_media';
-            } else {
-                $options['globalattributes']['class'] = 'jwplayer_media';
-            }
-
-            // Set up the player.
-            $PAGE->requires->js_call_amd('media_jwplayer/jwplayer', 'setupPlayer', array($playersetup));
-            $playerdiv = html_writer::tag('span', self::LINKPLACEHOLDER, array('id' => $playerid));
-            $outerspan = html_writer::tag('span', $playerdiv, $outerspanargs);
-            $output .= html_writer::tag('span', $outerspan, $options['globalattributes']);
+        // Set Title from title attribute of a tag if it has one if not default to filename.
+        if (isset($options['globalattributes']['title'])) {
+            $playlistitem['title'] = (string) $options['globalattributes']['title'];
+        } else if (!get_config('media_jwplayer', 'emptytitle')) {
+            $playlistitem['title'] = $this->get_name($name, $urls);
         }
+
+        // Setup video description.
+        if (isset($options['description'])) {
+            $playlistitem['description'] = $options['description'];
+        }
+
+        // Setup video mediaid and use this for the playerid.
+        $playerid = 'media_jwplayer_media_' . html_writer::random_id();
+        if (isset($options['mediaid']) && strlen(trim($options['mediaid']))) {
+            $playlistitem['mediaid'] = $options['mediaid'];
+            $playerid = 'media_jwplayer_media_' . preg_replace('/\s+/', '', $options['mediaid']);
+        }
+
+        // Setup poster image.
+        if (isset($options['image']) && $options['image'] instanceof moodle_url) {
+            $playlistitem['image'] = urldecode($options['image']->out(false));
+        } else if ($poster = get_config('media_jwplayer', 'defaultposter')) {
+            $syscontext = context_system::instance();
+            $playlistitem['image'] = moodle_url::make_pluginfile_url($syscontext->id, 'media_jwplayer', 'defaultposter', null, null, $poster)->out(true);
+        }
+
+        // Setup subtitle tracks.
+        if (isset($options['subtitles'])) {
+            $tracks = array();
+            foreach ($options['subtitles'] as $label => $subtitlefileurl) {
+                if ($subtitlefileurl instanceof moodle_url) {
+                    $tracks[] = array(
+                        'file' => urldecode($subtitlefileurl->out(false)),
+                        'label' => $label,
+                    );
+                }
+            }
+            $playlistitem['tracks'] = $tracks;
+        }
+
+        $playersetupdata['playlist'] = array($playlistitem);
+
+        // If width and/or height are set in the options override those from URL or defaults.
+        if (isset($options['width'])) {
+            $width = $options['width'];
+        }
+        if (isset($options['height'])) {
+            $height = $options['height'];
+        }
+
+        // If we are dealing with audio, show just the control bar.
+        if (mimeinfo('string', $sources[0]['file']) === 'audio') {
+            $width = MEDIA_JWPLAYER_AUDIO_WIDTH;
+            $height = MEDIA_JWPLAYER_AUDIO_HEIGHT;
+        }
+
+        // If width is not provided, use default.
+        if (!$width) {
+            // Use responsive width if choosen in settings otherwise default to fixed width.
+            if (get_config('media_jwplayer', 'displaystyle') === 'responsive') {
+                $width = MEDIA_JWPLAYER_VIDEO_WIDTH_RESPONSIVE;
+            } else {
+                $width = $CFG->media_default_width;
+            }
+        }
+
+        if (is_numeric($width)) {
+            $width = round($width);
+        }
+        $playersetupdata['width'] = $width;
+
+        // If width is a percentage surrounding span needs to have its width set so it does not default to 0px.
+        $outerspanargs = array('class' => 'jwplayer_playerblock');
+        if (!is_numeric($width)) {
+            $outerspanargs['style'] = 'width: '.$width.';';
+            $width = '100%';  // As the outer span in now at the required width, we set the width of the player to 100%.
+        }
+
+        // Automatically set the height unless it is specified.
+        if ($height) {
+            if (is_numeric($height)) {
+                $playersetupdata['height'] = $height;
+            } else if (is_numeric($width)) {
+                // If width is numeric and height is percentage, calculate height from width.
+                $playersetupdata['height'] = round($width * floatval($height) / 100);
+            } else {
+                // If width is also percentage, then set aspect ratio.
+                $playersetupdata['aspectratio'] = "100:".floatval($height);
+            }
+        } else {
+            if (is_numeric($width)) {
+                // If width is numeric calculate height from default aspect ratio.
+                $playersetupdata['height'] = round($width * MEDIA_JWPLAYER_VIDEO_ASPECTRATIO_H / MEDIA_JWPLAYER_VIDEO_ASPECTRATIO_W);
+            } else if (isset($options['aspectratio'])) {
+                // Responsive videos need aspect ratio set to automatically set height, if this is set in $options use that.
+                $playersetupdata['aspectratio'] = $options['aspectratio'];
+            } else {
+                // Use default aspectration.
+                $playersetupdata['aspectratio'] = MEDIA_JWPLAYER_VIDEO_ASPECTRATIO_W.":".MEDIA_JWPLAYER_VIDEO_ASPECTRATIO_H;
+            }
+        }
+
+        // Set additional player options: autostart, mute, controls, repeat, hlslabels, androidhls, primary.
+        if (isset($options['autostart'])) {
+            $playersetupdata['autostart'] = $options['autostart'];
+        }
+        if (isset($options['mute'])) {
+            $playersetupdata['mute'] = $options['mute'];
+        }
+        if (isset($options['controls'])) {
+            $playersetupdata['controls'] = $options['controls'];
+        }
+        if (isset($options['repeat'])) {
+            $playersetupdata['repeat'] = $options['repeat'];
+        }
+        if (isset($options['hlslabels']) && is_array($options['hlslabels'])) {
+            $playersetupdata['hlslabels'] = $options['hlslabels'];
+        }
+        if (isset($options['androidhls'])) {
+            $playersetupdata['androidhls'] = $options['androidhls'];
+        }
+        if (isset($options['primary'])) {
+            // if primary is set in $options then this will override all defaults including those for streams set above.
+            $playersetupdata['primary'] = $options['primary'];
+        }
+
+        // Load skin.
+        if ($customskincss = get_config('media_jwplayer', 'customskincss')) {
+            $playersetupdata['skin'] = $customskincss;
+        } else if ($skin = get_config('media_jwplayer', 'skin')) {
+            $playersetupdata['skin'] = $skin;
+        }
+
+        // Set Google Analytics settings if enabled.
+        if (get_config('media_jwplayer', 'googleanalytics')) {
+            if (isset($options['gaidstring'])) {
+                $gaidstring = $options['gaidstring'];
+            } else {
+                $gaidstring = get_config('media_jwplayer', 'gaidstring');
+            }
+
+            if (isset($options['galabel'])) {
+                $galabel = $options['galabel'];
+            } else {
+                $galabel = get_config('media_jwplayer', 'galabel');
+            }
+
+            $playersetupdata['ga'] = array(
+                'idstring' => $gaidstring,
+                'label' => $galabel
+            );
+        }
+
+        $playersetup = new stdClass();
+        $playersetup->playerid = $playerid;
+        $playersetup->setupdata = $playersetupdata;
+
+        // Add download button if required and supported.
+        if (get_config('media_jwplayer', 'downloadbutton') && !count($streams)) {
+            $playersetup->downloadbtn = array(
+                'img' => $CFG->wwwroot.'/media/player/jwplayer/pix/download.png',
+                'tttext' => get_string('videodownloadbtntttext', 'media_jwplayer'),
+            );
+        }
+
+        // Pass the page context variables for logging
+        $playersetup->logcontext = $PAGE->context->id;
+        $playersetup->logevents = $this->get_supported_events();
+
+        // Set required class for player span tag.
+        if (isset($options['globalattributes']['class'])) {
+            $options['globalattributes']['class'] .= ' jwplayer_media';
+        } else {
+            $options['globalattributes']['class'] = 'jwplayer_media';
+        }
+
+        // Set up the player.
+        $PAGE->requires->js_call_amd('media_jwplayer/jwplayer', 'setupPlayer', array($playersetup));
+        $playerdiv = html_writer::tag('span', self::LINKPLACEHOLDER, array('id' => $playerid));
+        $outerspan = html_writer::tag('span', $playerdiv, $outerspanargs);
+        $output .= html_writer::tag('span', $outerspan, $options['globalattributes']);
 
         return $output;
     }
