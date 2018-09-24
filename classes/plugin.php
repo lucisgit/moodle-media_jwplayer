@@ -50,12 +50,23 @@ class media_jwplayer_plugin extends core_media_player {
     public function embed($urls, $name, $width, $height, $options) {
         global $CFG;
 
-        // Create attribute options if we don't already have them.
-        if (empty($options['htmlattributes']) && !empty($options[core_media_manager::OPTION_ORIGINAL_TEXT])
-                && !preg_match('/<(video|audio)/', $options[core_media_manager::OPTION_ORIGINAL_TEXT])) {
-            $xml = new SimpleXMLElement($options[core_media_manager::OPTION_ORIGINAL_TEXT]);
-            foreach ($xml->attributes() as $attrib => $atval) {
-                $options['htmlattributes'][$attrib] = $atval;
+        // Process tag and populate options.
+        $playeroptions = array('globalattributes' => array());
+        if (!empty($options[core_media_manager::OPTION_ORIGINAL_TEXT])) {
+            if (preg_match('/<\/(video|audio)>/', $options[core_media_manager::OPTION_ORIGINAL_TEXT])) {
+                // This is HTML5 media tag.
+                // TODO: populate $playeroptions by parsing video/audio tag.
+            } else {
+                // This is <a> tag.
+                // Create attribute options if we don't already have them.
+                if (empty($options['htmlattributes'])) {
+                    $xml = new SimpleXMLElement($options[core_media_manager::OPTION_ORIGINAL_TEXT]);
+                    foreach ($xml->attributes() as $attrib => $atval) {
+                        $options['htmlattributes'][$attrib] = $atval;
+                    }
+                }
+                // Process tag attributes.
+                $playeroptions = $this->get_options_from_a_tag_attributes($options['htmlattributes']);
             }
         }
 
@@ -96,8 +107,8 @@ class media_jwplayer_plugin extends core_media_player {
             if (count($sources) > 0) {
                 $attributes = array();
                 // Set Title from title attribute of a tag if it has one if not default to filename.
-                if (isset($options['htmlattributes']['title'])) {
-                    $attributes['title'] = (string) $options['htmlattributes']['title'];
+                if (isset($playeroptions['globalattributes']['title'])) {
+                    $attributes['title'] = (string) $playeroptions['globalattributes']['title'];
                 } else if (!get_config('media_jwplayer', 'emptytitle')) {
                     $attributes['title'] = $this->get_name($name, $urls);
                 }
@@ -114,12 +125,99 @@ class media_jwplayer_plugin extends core_media_player {
                 $sources = implode("\n", $sources);
                 return html_writer::tag($isaudio ? 'audio' : 'video', $sources . self::LINKPLACEHOLDER, $attributes);
             }
-            // We can't fallback to html5 video/audio, just output link instead.
+            // If we can't fallback to html5 video/audio, just output link instead.
             return self::LINKPLACEHOLDER;
         }
 
         // Embeding JWPlayer.
-        return $this->embed_jwplayer($urls, $name, $width, $height, $options);
+        return $this->embed_jwplayer($urls, $name, $width, $height, $playeroptions);
+    }
+
+    /**
+     * Parse <a> tag attributes.
+     *
+     * This function is separating data-jwplayer-* attributes, format them and
+     * populate as simple array of player options used for player setup. Valid
+     * global attributes located in the tag are also determined and presented
+     * in a separate 'globalattributes' key.
+     *
+     * @param array $attributes Array of attributes in name => (str)value format.
+     * @return array Player options.
+     */
+    private function get_options_from_a_tag_attributes($attributes) {
+
+        $playeroptions = array('globalattributes' => array());
+        $globalatttributes = self::get_global_attributes();
+
+        foreach ($attributes as $attrib => $atval) {
+            // Process data-jwplayer-* attributes.
+            if (strpos($attrib, 'data-jwplayer-') === 0) {
+                // Treat attributes starting data-jwplayer as options.
+                $opt = preg_replace('~^data-jwplayer-~', '', $attrib);
+                $atval = trim((string) $atval);
+                if (strpos($atval, ': ') || strpos($atval, '; ') || strpos($atval, ', ')) {
+                    // If attribute contains any of :;, it needs to be split to an array.
+                    $atvalarray = preg_split('~[,;] ~', $atval);
+                    $newatval = array();
+                    foreach ($atvalarray as $dataval) {
+                        $newdata = explode(': ', $dataval, 2);
+                        if (count($newdata) > 1) {
+                            $newdata[1] = trim($newdata[1]);
+                            if (filter_var($newdata[1], FILTER_VALIDATE_URL)) {
+                                // If value is a URL convert to moodle_url.
+                                $newdata[1] = new moodle_url($newdata[1]);
+                            }
+                            $newatval[trim($newdata[0])] = $newdata[1];
+                        } else {
+                            $newdata[0] = trim($newdata[0]);
+                            if (filter_var($newdata[0], FILTER_VALIDATE_URL)) {
+                                // If value is a URL convert to moodle_url.
+                                $newdata[0] = new moodle_url($newdata[0]);
+                            }
+                            $newatval[] = $newdata[0];
+                        }
+                    }
+                    $atval = $newatval;
+                } else if (filter_var($atval, FILTER_VALIDATE_URL)) {
+                    // If value is a URL convert to moodle_url.
+                    $atval = new moodle_url($atval);
+                }
+                $playeroptions[$opt] = $atval;
+            } else {
+                // Pass any other global HTML attributes to the player span tag.
+                if (in_array($attrib, $globalatttributes) || strpos($attrib, 'data-') === 0) {
+                    $playeroptions['globalattributes'][$attrib] = $atval;
+                }
+            }
+        }
+        return $playeroptions;
+    }
+
+    /**
+     * Returns the list of valid global attributes.
+     *
+     * @return array Global attributes.
+     */
+    private static function get_global_attributes() {
+        // List of valid global attributes.
+        // https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes
+        return array(
+            'accesskey',
+            'class',
+            'contenteditable',
+            'contextmenu',
+            'dir',
+            'draggable',
+            'dropzone',
+            'hidden',
+            'id',
+            'lang',
+            'spellcheck',
+            'style',
+            'tabindex',
+            'title',
+            'translate',
+        );
     }
 
     /**
@@ -129,7 +227,7 @@ class media_jwplayer_plugin extends core_media_player {
      * @param string $name Display name; '' to use default
      * @param int $width Optional width; 0 to use default
      * @param int $height Optional height; 0 to use default
-     * @param array $options Options array
+     * @param array $options Player options array
      *                       image
      *                           use 'image' key with a moodle_url to an image as poster image
      *                           displayed before playback starts.
@@ -137,6 +235,8 @@ class media_jwplayer_plugin extends core_media_player {
      *                           use 'subtitles' key with an array of subtitle track files
      *                           in vtt or srt format indexed by label name.
      *                           Example: $options['subtitles']['English'] = http://example.com/english.vtt
+     *                       globalattributes
+     *                           Other no-player-specific attributes provided in the source (e.g. class, title).
      * @return string HTML code for embed
      */
     private function embed_jwplayer($urls, $name, $width, $height, $options) {
@@ -179,73 +279,12 @@ class media_jwplayer_plugin extends core_media_player {
         if (count($sources) > 0) {
             $playerid = 'media_jwplayer_media_' . html_writer::random_id();
 
-            // Process data-jwplayer attributes.
-            if (!empty($options['htmlattributes'])) {
-                foreach ($options['htmlattributes'] as $attrib => $atval) {
-                    if (strpos($attrib, 'data-jwplayer-') === 0) {
-                        // Treat attributes starting data-jwplayer as options.
-                        $opt = preg_replace('~^data-jwplayer-~', '', $attrib);
-                        $atval = trim((string) $atval);
-                        if (strpos($atval, ': ') || strpos($atval, '; ') || strpos($atval, ', ')) {
-                            // If attribute contains any of :;, it needs to be split to an array.
-                            $atvalarray = preg_split('~[,;] ~', $atval);
-                            $newatval = array();
-                            foreach ($atvalarray as $dataval) {
-                                $newdata = explode(': ', $dataval, 2);
-                                if (count($newdata) > 1) {
-                                    $newdata[1] = trim($newdata[1]);
-                                    if (filter_var($newdata[1], FILTER_VALIDATE_URL)) {
-                                        // If value is a URL convert to moodle_url.
-                                        $newdata[1] = new moodle_url($newdata[1]);
-                                    }
-                                    $newatval[trim($newdata[0])] = $newdata[1];
-                                } else {
-                                    $newdata[0] = trim($newdata[0]);
-                                    if (filter_var($newdata[0], FILTER_VALIDATE_URL)) {
-                                        // If value is a URL convert to moodle_url.
-                                        $newdata[0] = new moodle_url($newdata[0]);
-                                    }
-                                    $newatval[] = $newdata[0];
-                                }
-                            }
-                            $atval = $newatval;
-                        } else if (filter_var($atval, FILTER_VALIDATE_URL)) {
-                            // If value is a URL convert to moodle_url.
-                            $atval = new moodle_url($atval);
-                        }
-                        $options[$opt] = $atval;
-                    } else {
-                        // Pass any other global HTML attributes to the player span tag.
-                        $globalhtmlattributes = array(
-                            'accesskey',
-                            'class',
-                            'contenteditable',
-                            'contextmenu',
-                            'dir',
-                            'draggable',
-                            'dropzone',
-                            'hidden',
-                            'id',
-                            'lang',
-                            'spellcheck',
-                            'style',
-                            'tabindex',
-                            'title',
-                            'translate'
-                        );
-                        if (in_array($attrib, $globalhtmlattributes) || strpos($attrib, 'data-' === 0)) {
-                            $newattributes[$attrib] = $atval;
-                        }
-                    }
-                }
-            }
-
             // Set up playlist.
             $playlistitem = array('sources' => $sources);
 
             // Set Title from title attribute of a tag if it has one if not default to filename.
-            if (isset($options['htmlattributes']['title'])) {
-                $playlistitem['title'] = (string) $options['htmlattributes']['title'];
+            if (isset($options['globalattributes']['title'])) {
+                $playlistitem['title'] = (string) $options['globalattributes']['title'];
             } else if (!get_config('media_jwplayer', 'emptytitle')) {
                 $playlistitem['title'] = $this->get_name($name, $urls);
             }
@@ -413,17 +452,17 @@ class media_jwplayer_plugin extends core_media_player {
             $playersetup->logevents = $this->get_supported_events();
 
             // Set required class for player span tag.
-            if (isset($options['htmlattributes']['class'])) {
-                $newattributes['class'] .= ' jwplayer_media';
+            if (isset($options['globalattributes']['class'])) {
+                $options['globalattributes']['class'] .= ' jwplayer_media';
             } else {
-                $newattributes['class'] = 'jwplayer_media';
+                $options['globalattributes']['class'] = 'jwplayer_media';
             }
 
             // Set up the player.
             $PAGE->requires->js_call_amd('media_jwplayer/jwplayer', 'setupPlayer', array($playersetup));
             $playerdiv = html_writer::tag('span', self::LINKPLACEHOLDER, array('id' => $playerid));
             $outerspan = html_writer::tag('span', $playerdiv, $outerspanargs);
-            $output .= html_writer::tag('span', $outerspan, $newattributes);
+            $output .= html_writer::tag('span', $outerspan, $options['globalattributes']);
         }
 
         return $output;
