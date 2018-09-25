@@ -50,13 +50,17 @@ class media_jwplayer_plugin extends core_media_player {
     public function embed($urls, $name, $width, $height, $options) {
         global $CFG;
 
+        // Determine the type of media tag.
+        preg_match('/^<(video|audio|a)\b/i', $options[core_media_manager::OPTION_ORIGINAL_TEXT], $matches);
+        $tagtype = $matches[1];
+
         // Process tag and populate options.
         $playeroptions = array('globalattributes' => array());
         if (!empty($options[core_media_manager::OPTION_ORIGINAL_TEXT])) {
-            if (preg_match('/<\/(video|audio)>/', $options[core_media_manager::OPTION_ORIGINAL_TEXT])) {
+            if ($tagtype === 'video' || $tagtype === 'audio') {
                 // This is HTML5 media tag.
                 $playeroptions = $this->get_options_from_media_tag($options[core_media_manager::OPTION_ORIGINAL_TEXT]);
-            } else {
+            } else if ($tagtype === 'a') {
                 // This is <a> tag.
                 // Create attribute options if we don't already have them.
                 if (empty($options['htmlattributes'])) {
@@ -106,26 +110,34 @@ class media_jwplayer_plugin extends core_media_player {
                 $source = html_writer::empty_tag('source', array('src' => $url, 'type' => $mimetype));
                 $sources[] = $source;
             }
-            if (count($sources) > 0) {
-                $attributes = array();
-                // Set Title from title attribute of a tag if it has one if not default to filename.
-                if (isset($playeroptions['globalattributes']['title'])) {
-                    $attributes['title'] = (string) $playeroptions['globalattributes']['title'];
-                } else if (!get_config('media_jwplayer', 'emptytitle')) {
-                    $attributes['title'] = $this->get_name($name, $urls);
-                }
+            if (count($sources)) {
+                if ($tagtype === 'a') {
+                    // Faling back to html5 media.
+                    $attributes = array();
+                    // Set Title from title attribute of a tag if it has one if not default to filename.
+                    if (isset($playeroptions['globalattributes']['title'])) {
+                        $attributes['title'] = (string) $playeroptions['globalattributes']['title'];
+                    } else if (!get_config('media_jwplayer', 'emptytitle')) {
+                        $attributes['title'] = $this->get_name($name, $urls);
+                    }
 
-                // Set size.
-                if (get_config('media_jwplayer', 'displaystyle') !== 'responsive') {
-                    // Note we ignore limitsize setting if not responsive.
-                    parent::pick_video_size($width, $height);
-                    $attributes += ['width' => $width] + ($height ? ['height' => $height] : []);
-                }
+                    // Set size.
+                    if (get_config('media_jwplayer', 'displaystyle') !== 'responsive') {
+                        // Note we ignore limitsize setting if not responsive.
+                        parent::pick_video_size($width, $height);
+                        $attributes += ['width' => $width] + ($height ? ['height' => $height] : []);
+                    }
 
-                // Output html5 player.
-                $attributes += ['preload' => 'metadata', 'controls' => 'true'];
-                $sources = implode("\n", $sources);
-                return html_writer::tag($isaudio ? 'audio' : 'video', $sources . self::LINKPLACEHOLDER, $attributes);
+                    // Output html5 player.
+                    $attributes += ['preload' => 'metadata', 'controls' => 'true'];
+                    $sources = implode("\n", $sources);
+                    return html_writer::tag($isaudio ? 'audio' : 'video', $sources . self::LINKPLACEHOLDER, $attributes);
+                } else if ($tagtype === 'video' || $tagtype === 'audio') {
+                    // Faling back to original html5 media.
+                    // We replace sources in original tag, as they might have been modified by filter.
+                    $sources = implode("\n", $sources);
+                    return core_media_player_native::replace_sources($options[core_media_manager::OPTION_ORIGINAL_TEXT], $sources);
+                }
             }
             // If we can't fallback to html5 video/audio, just output link instead.
             return self::LINKPLACEHOLDER;
