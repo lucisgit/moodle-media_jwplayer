@@ -62,6 +62,8 @@ class media_jwplayer_plugin extends core_media_player {
                 if (empty($options['htmlattributes'])) {
                     $xml = new SimpleXMLElement($options[core_media_manager::OPTION_ORIGINAL_TEXT]);
                     foreach ($xml->attributes() as $attrib => $atval) {
+                        $attrib = clean_param($attrib, PARAM_ALPHAEXT);
+                        $atval = clean_param(htmlspecialchars_decode($atval), PARAM_RAW);
                         $options['htmlattributes'][$attrib] = $atval;
                     }
                 }
