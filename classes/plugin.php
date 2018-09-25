@@ -301,7 +301,7 @@ class media_jwplayer_plugin extends core_media_player {
             $playlistitem['image'] = urldecode($options['image']->out(false));
         } else if ($poster = get_config('media_jwplayer', 'defaultposter')) {
             $syscontext = context_system::instance();
-            $playlistitem['image'] = moodle_url::make_pluginfile_url($syscontext->id, 'media_jwplayer', 'defaultposter', null, null, $poster)->out(true);
+            $playlistitem['image'] = moodle_url::make_pluginfile_url($syscontext->id, 'media_jwplayer', 'defaultposter', 0, null, $poster)->out(true);
         }
 
         // Setup subtitle tracks.

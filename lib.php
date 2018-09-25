@@ -56,3 +56,37 @@ if (!defined('MEDIA_JWPLAYER_AUDIO_HEIGHT')) {
     // May be defined in config.php if required.
     define('MEDIA_JWPLAYER_AUDIO_HEIGHT', 30);
 }
+
+/**
+ * File serving.
+ *
+ * @param stdClass $course The course object.
+ * @param stdClass $cm The cm object.
+ * @param context $context The context object.
+ * @param string $filearea The file area.
+ * @param array $args List of arguments.
+ * @param bool $forcedownload Whether or not to force the download of the file.
+ * @param array $options Array of options.
+ * @return void|false
+ */
+function media_jwplayer_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = array()) {
+
+    if ($context->contextlevel != CONTEXT_SYSTEM) {
+        send_file_not_found();
+    }
+    // Make sure the filearea is one of those used by the plugin.
+    if ($filearea !== 'defaultposter') {
+        send_file_not_found();
+    }
+    // Make sure the user is logged in and has access to the module (plugins that are not course modules should leave out the 'cm' part).
+    require_login($course, true);
+
+    // All good. Serve the exported data.
+    $fs = get_file_storage();
+    $relativepath = implode('/', $args);
+    $fullpath = "/$context->id/media_jwplayer/$filearea/$relativepath";
+    if (!$file = $fs->get_file_by_hash(sha1($fullpath)) or $file->is_directory()) {
+        return false;
+    }
+    send_stored_file($file, 0, 0, $forcedownload, $options);
+}
