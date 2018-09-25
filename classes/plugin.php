@@ -55,7 +55,7 @@ class media_jwplayer_plugin extends core_media_player {
         if (!empty($options[core_media_manager::OPTION_ORIGINAL_TEXT])) {
             if (preg_match('/<\/(video|audio)>/', $options[core_media_manager::OPTION_ORIGINAL_TEXT])) {
                 // This is HTML5 media tag.
-                // TODO: populate $playeroptions by parsing video/audio tag.
+                $playeroptions = $this->get_options_from_media_tag($options[core_media_manager::OPTION_ORIGINAL_TEXT]);
             } else {
                 // This is <a> tag.
                 // Create attribute options if we don't already have them.
@@ -134,6 +134,63 @@ class media_jwplayer_plugin extends core_media_player {
     }
 
     /**
+     * Parse media tag.
+     *
+     * This function is parsing media tag and populate as simple array of player
+     * options used for player setup. Valid global attributes located in the tag
+     * are also determined and presented in a separate 'globalattributes' key.
+     *
+     * @param string $originalhtml Original HTML snippet.
+     * @return array Player options.
+     */
+    private function get_options_from_media_tag($originalhtml) {
+
+        $playeroptions = array('globalattributes' => array());
+        $globalattributes = self::get_global_attributes();
+
+        // Determine media type.
+        preg_match('/^<(video|audio)\b/i', $originalhtml, $matches);
+        $type = $matches[1];
+
+        // Get attributes.
+        $attributes = array();
+        $tag = $originalhtml;
+        while (preg_match('/^(<[^>]*\b)(\w+)="(.*?)"(.*)$/is', $tag, $matches)) {
+            // Attribute with value, e.g. width="500".
+            $tag = $matches[1] . $matches[4];
+            $attributes[clean_param($matches[2], PARAM_ALPHAEXT)] = clean_param(htmlspecialchars_decode($matches[3]), PARAM_RAW);
+        }
+        while (preg_match('~^(<[^>]*\b)(\w+)([ />].*)$~is', $tag, $matches)) {
+            // Some attributes may not have value, e.g. <video controls>.
+            $tag = $matches[1] . $matches[3];
+            $attributes[clean_param($matches[2], PARAM_ALPHAEXT)] = '';
+        }
+        // We have got media tag itself counted as "attribute with no value". Remove it from array.
+        unset($attributes[$type]);
+
+        // Populate global attributes.
+        foreach ($attributes as $attrib => $atval) {
+            if (in_array($attrib, $globalattributes) || strpos($attrib, 'data-') === 0) {
+                $playeroptions['globalattributes'][$attrib] = $atval;
+            }
+        }
+
+        // Populate media type specific attributes as options.
+        // We only take those we can use for player setup.
+        $mappingfunction = 'get_' . $type . '_tag_options_mapping';
+        $mediattributes = self::$mappingfunction();
+        foreach ($mediattributes as $attrib => $option) {
+            $playeroptions[$option] = $attributes[$attrib];
+        }
+        // Image is expected to be instance of moodle_url.
+        if (isset($playeroptions['image'])) {
+            $playeroptions['image'] = new moodle_url($playeroptions['image']);
+        }
+
+        return $playeroptions;
+    }
+
+    /**
      * Parse <a> tag attributes.
      *
      * This function is separating data-jwplayer-* attributes, format them and
@@ -147,7 +204,7 @@ class media_jwplayer_plugin extends core_media_player {
     private function get_options_from_a_tag_attributes($attributes) {
 
         $playeroptions = array('globalattributes' => array());
-        $globalatttributes = self::get_global_attributes();
+        $globalattributes = self::get_global_attributes();
 
         foreach ($attributes as $attrib => $atval) {
             // Process data-jwplayer-* attributes.
@@ -185,7 +242,7 @@ class media_jwplayer_plugin extends core_media_player {
                 $playeroptions[$opt] = $atval;
             } else {
                 // Pass any other global HTML attributes to the player span tag.
-                if (in_array($attrib, $globalatttributes) || strpos($attrib, 'data-') === 0) {
+                if (in_array($attrib, $globalattributes) || strpos($attrib, 'data-') === 0) {
                     $playeroptions['globalattributes'][$attrib] = $atval;
                 }
             }
@@ -193,6 +250,40 @@ class media_jwplayer_plugin extends core_media_player {
         return $playeroptions;
     }
 
+    /**
+     * Returns mapping of video tag attributes to matching JWPlayer setup options.
+     *
+     * We ignore height and width attributes, as they are determined by filter
+     * and passed to plugin in embed call. We also ignore attributes that to not
+     * have a corresponding option, e.g. 'crossorigin'
+     *
+     * @return array Mapping of tag attribute => player setup option.
+     */
+    private static function get_video_tag_options_mapping() {
+        return array(
+            'autoplay' => 'autostart',
+            'controls' => 'controls',
+            'loop'     => 'repeat',
+            'muted'    => 'mute',
+            'poster'   => 'image',
+        );
+    }
+
+    /**
+     * Returns mapping of audio tag attributes to matching JWPlayer setup options.
+     *
+     * We ignore attributes that to not have a corresponding option, e.g. 'crossorigin'
+     *
+     * @return array Mapping of tag attribute => player setup option.
+     */
+    private static function get_audio_tag_options_mapping() {
+        return array(
+            'autoplay' => 'autostart',
+            'controls' => 'controls',
+            'loop'     => 'repeat',
+            'muted'    => 'mute',
+        );
+    }
     /**
      * Returns the list of valid global attributes.
      *
