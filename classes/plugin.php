@@ -203,6 +203,7 @@ class media_jwplayer_plugin extends core_media_player {
         // https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes
         return array(
             'accesskey',
+            'autocapitalize',
             'class',
             'contenteditable',
             'contextmenu',
@@ -211,7 +212,14 @@ class media_jwplayer_plugin extends core_media_player {
             'dropzone',
             'hidden',
             'id',
+            'is',
+            'itemid',
+            'itemprop',
+            'itempref',
+            'itemscope',
+            'itemtype',
             'lang',
+            'slot',
             'spellcheck',
             'style',
             'tabindex',
