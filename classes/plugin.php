@@ -203,28 +203,68 @@ class media_jwplayer_plugin extends core_media_player {
 
         // Parse tracks.
         if (preg_match_all('~</?track\b[^>]*>~im', $originalhtml, $matches)) {
+            $tracks = array();
             foreach ($matches[0] as $trackhtml) {
                 // Determine track attributes.
-                $attributes = array();
+                $trackattributes = array();
                 while (preg_match('/^(<[^>]*\b)(\w+)="(.*?)"(.*)$/is', $trackhtml, $matches)) {
                     // Attribute with value, e.g. width="500".
                     $trackhtml = $matches[1] . $matches[4];
-                    $attributes[clean_param($matches[2], PARAM_ALPHAEXT)] = clean_param(htmlspecialchars_decode($matches[3]), PARAM_RAW);
+                    $key = clean_param($matches[2], PARAM_ALPHAEXT);
+                    $value = clean_param(htmlspecialchars_decode($matches[3]), PARAM_RAW);
+                    if (!empty($key) && !empty($value)) {
+                        $trackattributes[$key] = $value;
+                    }
                 }
                 while (preg_match('~^(<[^>]*\b)(\w+)([ />].*)$~is', $trackhtml, $matches)) {
                     // Some attributes may not have value, e.g. <track default>.
                     $trackhtml = $matches[1] . $matches[3];
-                    $attributes[clean_param($matches[2], PARAM_ALPHAEXT)] = '';
-
+                    $key = clean_param($matches[2], PARAM_ALPHAEXT);
+                    if (!empty($key)) {
+                        $trackattributes[$key] = '';
+                    }
                 }
                 // We have got track tag itself counted as "attribute with no value". Remove it from array.
-                unset($attributes['track']);
+                unset($trackattributes['track']);
 
-                // TODO: populate options for tracks.
+                // We popluate track data according to JWPlayer requirements.
+                // https://developer.jwplayer.com/jw-player/docs/developer-guide/jw7/configuration-reference/#playlist-tracks
+                // HTML5 track spec: https://developer.mozilla.org/en-US/docs/Web/HTML/Element/track
+                $validkinds = array('subtitles', 'captions', 'chapters');
+                if ($trackattributes['src'] && (empty($trackattributes['kind']) || in_array($trackattributes['kind'], $validkinds))) {
+                    // Track file.
+                    $track = array('file' => clean_param($trackattributes['src'], PARAM_URL));
+
+                    // Labels.
+                    if (isset($trackattributes['label'])) {
+                        $track['label'] = $trackattributes['label'];
+                    }
+                    if (isset($trackattributes['srclang'])) {
+                        $track['label'] = isset($track['label']) ? $track['label'] . ' (' . $trackattributes['srclang'] . ')': $trackattributes['srclang'];
+                    }
+
+                    // Kind of track.
+                    if (empty($trackattributes['kind']) || $trackattributes['kind'] === 'subtitles' || $trackattributes['kind'] === 'captions') {
+                        $track['kind'] = 'captions';
+                    } else if ($trackattributes['kind'] === 'chapters') {
+                        $track['kind'] = 'chapters';
+                    }
+
+                    // Default track (only applicable to 'captions').
+                    if (isset($trackattributes['default']) && $track['kind'] = 'captions') {
+                        $track['default'] = true;
+                    }
+
+                    // Add track data to the list of tracks.
+                    $tracks[] = $track;
+                }
+            }
+
+            // Define subtitles option.
+            if (count($tracks)) {
+                $playeroptions['subtitles'] = $tracks;
             }
         }
-
-
         return $playeroptions;
     }
 
