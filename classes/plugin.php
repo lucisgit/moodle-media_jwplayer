@@ -201,6 +201,30 @@ class media_jwplayer_plugin extends core_media_player {
             $playeroptions['image'] = new moodle_url($playeroptions['image']);
         }
 
+        // Parse tracks.
+        if (preg_match_all('~</?track\b[^>]*>~im', $originalhtml, $matches)) {
+            foreach ($matches[0] as $trackhtml) {
+                // Determine track attributes.
+                $attributes = array();
+                while (preg_match('/^(<[^>]*\b)(\w+)="(.*?)"(.*)$/is', $trackhtml, $matches)) {
+                    // Attribute with value, e.g. width="500".
+                    $trackhtml = $matches[1] . $matches[4];
+                    $attributes[clean_param($matches[2], PARAM_ALPHAEXT)] = clean_param(htmlspecialchars_decode($matches[3]), PARAM_RAW);
+                }
+                while (preg_match('~^(<[^>]*\b)(\w+)([ />].*)$~is', $trackhtml, $matches)) {
+                    // Some attributes may not have value, e.g. <track default>.
+                    $trackhtml = $matches[1] . $matches[3];
+                    $attributes[clean_param($matches[2], PARAM_ALPHAEXT)] = '';
+
+                }
+                // We have got track tag itself counted as "attribute with no value". Remove it from array.
+                unset($attributes['track']);
+
+                // TODO: populate options for tracks.
+            }
+        }
+
+
         return $playeroptions;
     }
 
