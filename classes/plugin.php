@@ -250,32 +250,31 @@ class media_jwplayer_plugin extends core_media_player {
                 // Treat attributes starting data-jwplayer as options.
                 $opt = preg_replace('~^data-jwplayer-~', '', $attrib);
                 $atval = trim((string) $atval);
-                if (strpos($atval, ': ') || strpos($atval, '; ') || strpos($atval, ', ')) {
-                    // If attribute contains any of :;, it needs to be split to an array.
+                if ($opt === 'subtitles') {
+                    // For subtitles, we need to parse attribute content and build array of tracks.
+                    // Split into tracks.
                     $atvalarray = preg_split('~[,;] ~', $atval);
-                    $newatval = array();
-                    foreach ($atvalarray as $dataval) {
-                        $newdata = explode(': ', $dataval, 2);
-                        if (count($newdata) > 1) {
-                            $newdata[1] = trim($newdata[1]);
-                            if (filter_var($newdata[1], FILTER_VALIDATE_URL)) {
-                                // If value is a URL convert to moodle_url.
-                                $newdata[1] = new moodle_url($newdata[1]);
-                            }
-                            $newatval[trim($newdata[0])] = $newdata[1];
+                    $tracks = array();
+                    foreach ($atvalarray as $trackdata) {
+                        // Track can be specified in two formats, with label ('English: https://URL')
+                        // or just URL.
+                        $trackdata = explode(': ', $trackdata, 2);
+                        if (count($trackdata) === 2) {
+                            // Label has been provided.
+                            $tracks[] = array(
+                                'label' => trim($trackdata[0]),
+                                'file' => clean_param($trackdata[1], PARAM_URL),
+                            );
                         } else {
-                            $newdata[0] = trim($newdata[0]);
-                            if (filter_var($newdata[0], FILTER_VALIDATE_URL)) {
-                                // If value is a URL convert to moodle_url.
-                                $newdata[0] = new moodle_url($newdata[0]);
-                            }
-                            $newatval[] = $newdata[0];
+                            $tracks[] = array(
+                                'file' => clean_param($trackdata[0], PARAM_URL),
+                            );
                         }
                     }
-                    $atval = $newatval;
+                    $atval = $tracks;
                 } else if (filter_var($atval, FILTER_VALIDATE_URL)) {
                     // If value is a URL convert to moodle_url.
-                    $atval = new moodle_url($atval);
+                    $atval = new moodle_url(clean_param($atval, PARAM_URL));
                 }
                 $playeroptions[$opt] = $atval;
             } else {
@@ -442,17 +441,8 @@ class media_jwplayer_plugin extends core_media_player {
         }
 
         // Setup subtitle tracks.
-        if (isset($options['subtitles'])) {
-            $tracks = array();
-            foreach ($options['subtitles'] as $label => $subtitlefileurl) {
-                if ($subtitlefileurl instanceof moodle_url) {
-                    $tracks[] = array(
-                        'file' => urldecode($subtitlefileurl->out(false)),
-                        'label' => $label,
-                    );
-                }
-            }
-            $playlistitem['tracks'] = $tracks;
+        if (isset($options['subtitles']) && count($options['subtitles'])) {
+            $playlistitem['tracks'] = $options['subtitles'];
         }
 
         $playersetupdata['playlist'] = array($playlistitem);
