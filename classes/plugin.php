@@ -194,11 +194,13 @@ class media_jwplayer_plugin extends core_media_player {
         $mappingfunction = 'get_' . $type . '_tag_options_mapping';
         $mediattributes = self::$mappingfunction();
         foreach ($mediattributes as $attrib => $option) {
-            $playeroptions[$option] = $attributes[$attrib];
+            if (isset($attributes[$attrib])) {
+                $playeroptions[$option] = $attributes[$attrib];
+            }
         }
         // Image is expected to be instance of moodle_url.
         if (isset($playeroptions['image'])) {
-            $playeroptions['image'] = new moodle_url($playeroptions['image']);
+            $playeroptions['image'] = new moodle_url(clean_param($playeroptions['image'], PARAM_URL));
         }
 
         // Parse tracks.
