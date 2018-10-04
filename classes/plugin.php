@@ -713,17 +713,12 @@ class media_jwplayer_plugin extends core_media_player {
         $mediamanager = core_media_manager::instance();
         $result = array();
         foreach ($urls as $url) {
-            // If RTMP support is disabled, skip the URL.
+            // If RTMP support is disabled, skip the RTMP URL.
             if (!get_config('media_jwplayer', 'supportrtmp') && ($url->get_scheme() === 'rtmp')) {
                 continue;
             }
-            // If RTMP support is enabled, URL is supported.
-            if (get_config('media_jwplayer', 'supportrtmp') && ($url->get_scheme() === 'rtmp')) {
-                $result[] = $url;
-                continue;
-            }
-            if (in_array($mediamanager->get_extension($url), $extensions)) {
-                // URL is matching one of enabled extensions.
+            if (in_array($mediamanager->get_extension($url), $extensions) || ($url->get_scheme() === 'rtmp')) {
+                // URL is matching one of enabled extensions or it is RTMP URL.
                 $result[] = $url;
             }
         }
