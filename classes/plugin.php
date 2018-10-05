@@ -83,6 +83,8 @@ class media_jwplayer_plugin extends core_media_player {
             $supportedextensions = file_get_typegroup('extension', ['html_video', 'html_audio']);
             $sources = array();
             $isaudio = null;
+            // Check URLs if they can be used for html5. Even if we had html5 video source,
+            // we go through links anyway to add mimetype.
             foreach ($urls as $url) {
                 if ($url->get_scheme() === 'rtmp') {
                     // RTMP needs flash, skipping.
@@ -111,6 +113,15 @@ class media_jwplayer_plugin extends core_media_player {
                 $sources[] = $source;
             }
             if (count($sources)) {
+                // Setup poster image.
+                $poster = '';
+                if (isset($playeroptions['image']) && $playeroptions['image'] instanceof moodle_url) {
+                    $poster = urldecode($playeroptions['image']->out(false));
+                } else if ($poster = get_config('media_jwplayer', 'defaultposter')) {
+                    $syscontext = context_system::instance();
+                    $poster = moodle_url::make_pluginfile_url($syscontext->id, 'media_jwplayer', 'defaultposter', 0, null, $poster)->out(true);
+                }
+
                 if ($tagtype === 'a') {
                     // Faling back to html5 media.
                     $attributes = array();
@@ -128,6 +139,11 @@ class media_jwplayer_plugin extends core_media_player {
                         $attributes += ['width' => $width] + ($height ? ['height' => $height] : []);
                     }
 
+                    // Set poster.
+                    if ($poster) {
+                        $attributes += ['poster' => $poster];
+                    }
+
                     // Output html5 player.
                     $attributes += ['preload' => 'metadata', 'controls' => 'true'];
                     $sources = implode("\n", $sources);
@@ -136,7 +152,13 @@ class media_jwplayer_plugin extends core_media_player {
                     // Faling back to original html5 media.
                     // We replace sources in original tag, as they might have been modified by filter.
                     $sources = implode("\n", $sources);
-                    return core_media_player_native::replace_sources($options[core_media_manager::OPTION_ORIGINAL_TEXT], $sources);
+                    $output = core_media_player_native::replace_sources($options[core_media_manager::OPTION_ORIGINAL_TEXT], $sources);
+
+                    // And we set poster.
+                    if ($poster) {
+                        $output = core_media_player_native::add_attributes($options[core_media_manager::OPTION_ORIGINAL_TEXT], ['poster' => $poster]);
+                    }
+                    return $output;
                 }
             }
             // If we can't fallback to html5 video/audio, just output link instead.
