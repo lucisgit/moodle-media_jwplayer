@@ -86,6 +86,17 @@ if ($ADMIN->fulltree) {
             get_string('downloadbuttondesc', 'media_jwplayer'),
             0));
 
+    // Playback rate controls.
+    $supportedrates = array('0.25', '0.5', '0.75', '1', '1.25', '1.5', '1.75', '2');
+    $supportedratesvalues = array_map(function($param) {
+        return $param . 'x';
+    }, $supportedrates);
+
+    $settings->add(new admin_setting_configmultiselect('media_jwplayer/playbackrates',
+            get_string('playbackrates', 'media_jwplayer'),
+            get_string('playbackratesdesc', 'media_jwplayer'),
+            array('1'), array_combine($supportedrates, $supportedratesvalues)));
+
     // Display Style (Fixed Width or Responsive).
     $displaystylechoice = array(
         'fixed' => get_string('displayfixed', 'media_jwplayer'),

@@ -607,6 +607,16 @@ class media_jwplayer_plugin extends core_media_player {
             $playersetupdata['skin'] = $skin;
         }
 
+        // Playback rate.
+        $playbackrates = get_config('media_jwplayer', 'playbackrates');
+        if (!empty($playbackrates) && $playbackrates !== '1') {
+            // Convert settings value to array of float numbers.
+            $playbackrates = array_map(function($param) {
+                return (float) $param;
+            }, explode(',', $playbackrates));
+            $playersetupdata['playbackRateControls'] = $playbackrates;
+        }
+
         // Set Google Analytics settings if enabled.
         if (get_config('media_jwplayer', 'googleanalytics')) {
             if (isset($options['gaidstring'])) {

@@ -68,6 +68,8 @@ $string['licensekey'] = 'Player license key';
 $string['licensekeydesc'] = 'Player license key from <a href="https://dashboard.jwplayer.com/#/players/downloads">License Keys & Downloads</a> page on JW Player website. Specify here a key for "JW Player 7 (Self-Hosted)", even if you are using cloud-hosted hosting method in the settings above.';
 $string['paideditionsconfig'] = 'Settings for paid editions of JW Player';
 $string['paideditionsconfigdescr'] = 'Settings below only work with Pro, Premium and Ads editions. They have no effect for free edition.';
+$string['playbackrates'] = 'Playback rate button';
+$string['playbackratesdesc'] = 'Display a button in the controlbar to adjust playback speed. Select speeds that need to be available for users. To disable control, select only \'1x\' or leave no options selected.';
 $string['pluginname'] = 'JW Player';
 $string['privacy:metadata'] = 'JWPlayer plugin does not store any personal data.';
 $string['standardskin'] = 'standard';
