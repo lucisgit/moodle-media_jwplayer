@@ -50,13 +50,13 @@ class media_jwplayer_plugin extends core_media_player {
     public function embed($urls, $name, $width, $height, $options) {
         global $CFG;
 
-        // Determine the type of media tag.
-        preg_match('/^<(video|audio|a)\b/i', $options[core_media_manager::OPTION_ORIGINAL_TEXT], $matches);
-        $tagtype = $matches[1];
-
         // Process tag and populate options.
         $playeroptions = array('globalattributes' => array());
         if (!empty($options[core_media_manager::OPTION_ORIGINAL_TEXT])) {
+            // Determine the type of media tag.
+            preg_match('/^<(video|audio|a)\b/i', $options[core_media_manager::OPTION_ORIGINAL_TEXT], $matches);
+            $tagtype = $matches[1];
+
             if ($tagtype === 'video' || $tagtype === 'audio') {
                 // This is HTML5 media tag.
                 $playeroptions = $this->get_options_from_media_tag($options[core_media_manager::OPTION_ORIGINAL_TEXT]);
@@ -74,6 +74,11 @@ class media_jwplayer_plugin extends core_media_player {
                 // Process tag attributes.
                 $playeroptions = $this->get_options_from_a_tag_attributes($options['htmlattributes']);
             }
+        } else {
+            // We don't have original text if $mediamanager->embed_url called directly
+            // (e.g. this happens when media URL is embedded in mod_url).
+            // In this case treat it as <a href=...> tag.
+            $tagtype = 'a';
         }
 
         if ($this->ismobileapp) {
