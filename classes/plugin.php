@@ -222,7 +222,7 @@ class media_jwplayer_plugin extends core_media_player {
         $mediattributes = self::$mappingfunction();
         foreach ($mediattributes as $attrib => $option) {
             if (isset($attributes[$attrib])) {
-                $playeroptions[$option] = $attributes[$attrib];
+                $playeroptions[$option] = $attributes[$attrib] ? $attributes[$attrib] : "true";
             }
         }
         // Image is expected to be instance of moodle_url.
