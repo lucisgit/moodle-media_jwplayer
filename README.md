@@ -1,5 +1,9 @@
-moodle-media_jwplayer
+moodle-media_jwplayer (JW Player 7)
 ======================
+
+**This version of plugin is no longer maintained as JW Player 7 [has been deprecated](https://github.com/lucisgit/moodle-media_jwplayer/issues/15).
+Media plugin that supports JW Player 8 is located at [kabalin/moodle-media_jwplayer](https://github.com/kabalin/moodle-media_jwplayer)**
+___
 
 This a media player plugin that allows using JW Player 7 for playing HTML5 and
 Flash content in Moodle 3.2 and higher<sup>1</sup>. The plugin is designed
